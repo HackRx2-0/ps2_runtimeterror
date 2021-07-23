@@ -8,10 +8,9 @@ import Message from "./Models/message.js";
 import Channel from "./Models/channel.js";
 import cookieParser from "cookie-parser";
 import mongoose from "mongoose";
-
-//
 import { spawn } from "child_process";
-//
+import SerpApi from "google-search-results-nodejs";
+const search = new SerpApi.GoogleSearch(config.serp_api);
 
 const app = express();
 app.use(express.json());
@@ -78,16 +77,39 @@ app.post("/addmessage", (req, res) => {
   var message = req.body.message;
   var channelId = req.body.channel_id;
   var userId = req.body.user_id;
-  var keywords = ["xyz", "abc"];
 
   var message = new Message({
     message: message,
-    keywords: keywords,
     user: userId,
   });
 
   var str = req.body.message;
+
+  message.save((err, done) => {
+    if (err) {
+      console.log(err);
+      res.status(400).json(err.message);
+    } else {
+      Channel.findOne({ _id: channelId }, (err, found) => {
+        found.messages.push(message);
+        found.save((err, done) => {
+          if (err) {
+            console.log(err);
+            res.status(400).json(err.message);
+          } else {
+            res.send(str);
+          }
+        });
+      });
+    }
+  });
+});
+
+app.post("/keyword", (req, res) => {
+  var str = req.body.str;
   let out = "";
+
+  console.log(str);
 
   var py = spawn("python", ["pyScript/nlpModel.py"]),
     data = str;
@@ -100,32 +122,29 @@ app.post("/addmessage", (req, res) => {
   // Python Output display
   py.stdout.on("end", function () {
     out = JSON.parse(out);
-    console.log(out);
 
-    message.save((err, done) => {
-      if (err) {
-        console.log(err);
-        res.status(400).json(err.message);
-      } else {
-        Channel.findOne({ _id: channelId }, (err, found) => {
-          found.messages.push(message);
-          found.save((err, done) => {
-            if (err) {
-              console.log(err);
-              res.status(400).json(err.message);
-            } else {
-              res.send(out);
-            }
-          });
-        });
-      }
-    });
+    res.send(out);
   });
 
   // Python data input
   py.stdin.write(JSON.stringify(data));
 
   py.stdin.end();
+});
+
+app.post("/x", (req, res) => {
+  var str = req.body.str;
+
+  search.json(
+    {
+      q: str,
+      location: "india",
+    },
+    (result) => {
+      console.log(result.shopping_results[0].link);
+      res.send(result.shopping_results[0].link);
+    }
+  );
 });
 
 app.listen(config.port, () => {
