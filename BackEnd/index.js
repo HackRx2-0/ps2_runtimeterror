@@ -41,29 +41,35 @@ app.post("/addchannel", (req, res) => {
 });
 
 app.get("/getchannel", (req, res) => {
-  Channel.find(
-    {},
-    { channelName: 1, _id: 1, messages: 0 },
-    (err, channelNames) => {
-      if (err) {
-        console.log(err);
-        res.status(400).json(err.message);
-      } else {
-        console.log(newChannel);
-        res.status(200).send(channelNames);
-      }
+  Channel.find({}, (err, channelNames) => {
+    if (err) {
+      console.log(err);
+      res.status(400).json(err.message);
+    } else {
+      res.status(200).send(channelNames);
     }
-  );
+  });
 });
 
 app.post("/getchanneldetails", (req, res) => {
   var { id } = req.body;
+
   Channel.find({ _id: id }, (err, foundChannels) => {
     if (err) {
       console.log(err);
       res.status(400).json(err.message);
     } else {
-      res.status(200).send(foundChannels);
+      Message.find({ _id: foundChannels[0].messages }, (err, foundMessages) => {
+        if (err) {
+          console.log(err);
+          res.status(400).json(err.message);
+        } else {
+          res.json({
+            foundMessages,
+            foundChannels,
+          });
+        }
+      });
     }
   });
 });
@@ -80,21 +86,7 @@ app.post("/addmessage", (req, res) => {
     user: userId,
   });
 
-  Channel.findOne({ _id: channelId }, (err, found) => {
-    found.messages.push(message);
-    found.save((err, done) => {
-      if (err) {
-        console.log(err);
-        res.status(400).json(err.message);
-      } else {
-        res.send(done);
-      }
-    });
-  });
-});
-
-app.post("/temp", (req, res) => {
-  var str = req.body.str;
+  var str = req.body.message;
   let out = "";
 
   var py = spawn("python", ["pyScript/nlpModel.py"]),
@@ -107,57 +99,33 @@ app.post("/temp", (req, res) => {
 
   // Python Output display
   py.stdout.on("end", function () {
-    console.log("Out", out);
     out = JSON.parse(out);
     console.log(out);
-    res.send(out);
+
+    message.save((err, done) => {
+      if (err) {
+        console.log(err);
+        res.status(400).json(err.message);
+      } else {
+        Channel.findOne({ _id: channelId }, (err, found) => {
+          found.messages.push(message);
+          found.save((err, done) => {
+            if (err) {
+              console.log(err);
+              res.status(400).json(err.message);
+            } else {
+              res.send(out);
+            }
+          });
+        });
+      }
+    });
   });
 
   // Python data input
   py.stdin.write(JSON.stringify(data));
 
   py.stdin.end();
-});
-
-// app.get("/temp", (req, res) => {
-//   const tempMessage = {
-//     message: "Hello Buddy",
-//     keywords: "Buddy",
-//     user: "Parva",
-//   };
-//   const message = new Message(tempMessage);
-//   message.save((err, newMessage) => {
-//     if (err) {
-//       console.log(err);
-//       res.status(400).json(err.message);
-//     } else {
-//       console.log(newMessage);
-//       res.status(200).send(newMessage);
-//     }
-//   });
-// });
-
-app.get("/addchannel", (req, res) => {
-  const tempMessage1 = {
-    message: "Hello Parva Buddy",
-    keywords: "Buddy",
-    user: "Parva",
-  };
-  const message = new Message(tempMessage1);
-  const tempChannel = {
-    channelName: "Hackrx2.0",
-    messages: [message],
-  };
-  const channel = new Channel(tempChannel);
-  channel.save((err, newChannel) => {
-    if (err) {
-      console.log(err);
-      res.status(400).json(err.message);
-    } else {
-      console.log(newChannel);
-      res.status(200).send(newChannel);
-    }
-  });
 });
 
 app.listen(config.port, () => {
