@@ -9,6 +9,10 @@ import Channel from "./Models/channel.js";
 import cookieParser from "cookie-parser";
 import mongoose from "mongoose";
 
+//
+import { spawn } from "child_process";
+//
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -21,72 +25,100 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.post("/addchannel", (req, res) => {
-  var name = req.body.channelName;
-  var channel = new Channel({
-    channelName: name,
-  });
-  channel.save((err, newChannel) => {
-    if (err) {
-      console.log(err);
-      res.status(400).json(err.message);
-    } else {
-      console.log(newChannel);
-      res.status(200).send(newChannel);
-    }
-  });
+    var name = req.body.channelName;
+    var channel = new Channel({
+        channelName: name,
+    });
+    channel.save((err, newChannel) => {
+        if (err) {
+            console.log(err);
+            res.status(400).json(err.message);
+        } else {
+            console.log(newChannel);
+            res.status(200).send(newChannel);
+        }
+    });
 });
 
 app.get("/getchannel", (req, res) => {
-  Channel.find(
-    {},
-    { channelName: 1, _id: 1, messages: 0 },
-    (err, channelNames) => {
-      if (err) {
-        console.log(err);
-        res.status(400).json(err.message);
-      } else {
-        console.log(newChannel);
-        res.status(200).send(channelNames);
-      }
-    }
-  );
+    Channel.find(
+        {},
+        { channelName: 1, _id: 1, messages: 0 },
+        (err, channelNames) => {
+            if (err) {
+                console.log(err);
+                res.status(400).json(err.message);
+            } else {
+                console.log(newChannel);
+                res.status(200).send(channelNames);
+            }
+        }
+    );
 });
 
 app.post("/getchanneldetails", (req, res) => {
-  var { id } = req.body;
-  Channel.find({ _id: id }, (err, foundChannels) => {
-    if (err) {
-      console.log(err);
-      res.status(400).json(err.message);
-    } else {
-      res.status(200).send(foundChannels);
-    }
-  });
+    var { id } = req.body;
+    Channel.find({ _id: id }, (err, foundChannels) => {
+        if (err) {
+            console.log(err);
+            res.status(400).json(err.message);
+        } else {
+            res.status(200).send(foundChannels);
+        }
+    });
 });
 
 app.post("/addmessage", (req, res) => {
-  var message = req.body.message;
-  var channelId = req.body.channel_id;
-  var userId = req.body.user_id;
-  var keywords = ["xyz", "abc"];
+    var message = req.body.message;
+    var channelId = req.body.channel_id;
+    var userId = req.body.user_id;
+    var keywords = ["xyz", "abc"];
 
-  var message = new Message({
-    message: message,
-    keywords: keywords,
-    user: userId,
-  });
-
-  Channel.findOne({ _id: channelId }, (err, found) => {
-    found.messages.push(message);
-    found.save((err, done) => {
-      if (err) {
-        console.log(err);
-        res.status(400).json(err.message);
-      } else {
-        res.send(done);
-      }
+    var message = new Message({
+        message: message,
+        keywords: keywords,
+        user: userId,
     });
-  });
+
+    Channel.findOne({ _id: channelId }, (err, found) => {
+        found.messages.push(message);
+        found.save((err, done) => {
+            if (err) {
+                console.log(err);
+                res.status(400).json(err.message);
+            } else {
+                res.send(done);
+            }
+        });
+    });
+});
+
+app.post("/temp", (req, res) => {
+    let { str } = req.body;
+    console.log(str);
+    let out = "";
+
+    var py = spawn("python", ["pyScript/nlpModel.py"]),
+        data = { str: str };
+
+    // Python output
+    py.stdout.on("data", function (output) {
+        out += output.toString();
+    });
+
+    // Python Output display
+    py.stdout.on("end", function () {
+        console.log("Out", out);
+        out = JSON.parse(out);
+        console.log(out);
+        res.send(out);
+        // res.redirect("/data_analysis");
+    });
+
+    // Python data input
+    py.stdin.write(JSON.stringify(data));
+
+    py.stdin.end();
 });
 
 // app.get("/temp", (req, res) => {
@@ -108,28 +140,28 @@ app.post("/addmessage", (req, res) => {
 // });
 
 app.get("/addchannel", (req, res) => {
-  const tempMessage1 = {
-    message: "Hello Parva Buddy",
-    keywords: "Buddy",
-    user: "Parva",
-  };
-  const message = new Message(tempMessage1);
-  const tempChannel = {
-    channelName: "Hackrx2.0",
-    messages: [message],
-  };
-  const channel = new Channel(tempChannel);
-  channel.save((err, newChannel) => {
-    if (err) {
-      console.log(err);
-      res.status(400).json(err.message);
-    } else {
-      console.log(newChannel);
-      res.status(200).send(newChannel);
-    }
-  });
+    const tempMessage1 = {
+        message: "Hello Parva Buddy",
+        keywords: "Buddy",
+        user: "Parva",
+    };
+    const message = new Message(tempMessage1);
+    const tempChannel = {
+        channelName: "Hackrx2.0",
+        messages: [message],
+    };
+    const channel = new Channel(tempChannel);
+    channel.save((err, newChannel) => {
+        if (err) {
+            console.log(err);
+            res.status(400).json(err.message);
+        } else {
+            console.log(newChannel);
+            res.status(200).send(newChannel);
+        }
+    });
 });
 
 app.listen(config.port, () => {
-  console.log(`App is listening to ${config.port}`);
+    console.log(`App is listening to ${config.port}`);
 });
