@@ -15,29 +15,44 @@ import { selectUser } from "./features/userSlice";
 import db, { auth } from "./firebase";
 import { useState } from "react";
 import { useEffect } from "react";
-
+import axios from "axios";
 const Sidebar = () => {
+  let backEndURL = "http://localhost:9000";
   const user = useSelector(selectUser);
   const [channels, setChannels] = useState([]);
 
   useEffect(() => {
-    db.collection("channels").onSnapshot((snapshot) => {
-      setChannels(
-        snapshot.docs.map((doc) => ({
-          id: doc.id,
-          channel: doc.data(),
-        }))
-      );
+    axios({
+      method: "post",
+      url: `${backEndURL}/getchannel`,
+      data: {
+        firstName: "Fred",
+        lastName: "Flintstone",
+      },
     });
   }, []);
 
   const handleAddChannel = (e) => {
     e.preventDefault();
     const channelName = prompt("Enter a new channel name");
+    const messages = [];
+    const channels = { channelName };
+    // console.log(channelName);
     if (channelName) {
-      db.collection("channels").add({
-        channelName: channelName,
-      });
+      // console.log(JSON.stringify(channels));
+
+      fetch(`${backEndURL}/addchannel`, {
+        method: "POST",
+        header: { "Content-Type": "application/json" },
+        body: JSON.stringify(channels),
+      })
+        .then((res) => {
+          alert(res);
+          alert(`${channelName} added successfully`);
+        })
+        .catch((err) => {
+          alert(err.message);
+        });
     }
   };
 
@@ -59,13 +74,11 @@ const Sidebar = () => {
         </div>
 
         <div className="sidebar__channelsList">
-          {channels.map(({ id, channel }) => (
-            <SidebarChannel
-              key={id}
-              id={id}
-              channelName={channel.channelName}
-            />
-          ))}
+          {channels.length &&
+            channels.map(({ id, channelName }) => (
+              <SidebarChannel key={id} id={id} channelName={channelName} />
+            ))}
+          {!channels.length && <div>No Channels Created</div>}
         </div>
       </div>
 
