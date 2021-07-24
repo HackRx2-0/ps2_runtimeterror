@@ -97,7 +97,14 @@ app.post("/addmessage", (req, res) => {
             console.log(err);
             res.status(400).json(err.message);
           } else {
-            res.send(str);
+            Message.find({ _id: found.messages }, (err, chats) => {
+              if (err) {
+                console.log(err);
+                res.status(400).json(err.message);
+              } else {
+                res.send(chats);
+              }
+            });
           }
         });
       });
@@ -108,8 +115,6 @@ app.post("/addmessage", (req, res) => {
 app.post("/keyword", (req, res) => {
   var str = req.body.str;
   let out = "";
-
-  console.log(str);
 
   var py = spawn("python", ["pyScript/nlpModel.py"]),
     data = str;
@@ -123,28 +128,28 @@ app.post("/keyword", (req, res) => {
   py.stdout.on("end", function () {
     out = JSON.parse(out);
 
-    res.send(out);
+    var find = "";
+
+    for (var o in out.keywords) {
+      find += out.keywords[o] + " ";
+    }
+
+    search.json(
+      {
+        q: find,
+        location: "india",
+      },
+      (result) => {
+        console.log(result.shopping_results[0].link);
+        res.send(result.shopping_results[0].link);
+      }
+    );
   });
 
   // Python data input
   py.stdin.write(JSON.stringify(data));
 
   py.stdin.end();
-});
-
-app.post("/x", (req, res) => {
-  var str = req.body.str;
-
-  search.json(
-    {
-      q: str,
-      location: "india",
-    },
-    (result) => {
-      console.log(result.shopping_results[0].link);
-      res.send(result.shopping_results[0].link);
-    }
-  );
 });
 
 app.listen(config.port, () => {
