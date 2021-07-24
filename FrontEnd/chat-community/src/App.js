@@ -43,7 +43,6 @@ function App() {
 
     return (
         <div className="app">
-            {/* <button onClick={fetchRequest}>Click me</button> */}
             {userHooks.uid ? (
                 <>
                     <Sidebar

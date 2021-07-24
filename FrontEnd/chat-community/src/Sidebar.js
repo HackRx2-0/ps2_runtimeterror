@@ -52,28 +52,6 @@ const Sidebar = ({ user, onChannelChange }) => {
                 });
         }
     };
-    // useEffect(() => {
-    //     fetch("")
-    //       db.collection("channels").onSnapshot((snapshot) => {
-    //           setChannels(
-    //               snapshot.docs.map((doc) => ({
-    //                   id: doc.id,
-    //                   channel: doc.data(),
-    //               }))
-    //           );
-    //       });
-    //   }, []);
-
-    //   const handleAddChannel = (e) => {
-    //       e.preventDefault();
-    //       const channelName = prompt("Enter a new channel name");
-    //       if (channelName) {
-    //           db.collection("channels").add({
-    //               channelName: channelName,
-    //           });
-    //       }
-    //   };
-
     return (
         <div className="sidebar">
             <div className="sidebar__top">
@@ -106,34 +84,6 @@ const Sidebar = ({ user, onChannelChange }) => {
                 </div>
             </div>
 
-            {/* <div className="sidebar__voice">
-        <SignalCellularAltIcon
-          className="sidebar__voiceIcons"
-          fontSize="large"
-        />
-        <div className="sidebar__voiceInfo">
-          <h3>Voice Connected</h3>
-          <p>Stream</p>
-        </div>
-
-        <div className="sidebar__voiceIcons">
-          <InfoOutlinedIcon />
-          <CallIcon />
-        </div>
-      </div> */}
-            {/* <div className="sidebar__profile">
-        <Avatar />
-        <div className="sidebar__profileInfo">
-          <h3>Hello</h3>
-          <p>#userid</p>
-        </div>
-
-        <div className="sidebar__profileIcons">
-          <MicIcon />
-          <HeadsetIcon />
-          <SettingsIcon />
-        </div>
-      </div> */}
             <div className="sidebar__profile">
                 <Avatar src={user.photo} />
                 <div className="sidebar__profileInfo">
