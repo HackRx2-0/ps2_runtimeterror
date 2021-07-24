@@ -3,24 +3,25 @@ import "./Login.css";
 import { Button } from "@material-ui/core";
 import { auth, provider } from "./firebase";
 
-function Login() {
-  const signIn = () => {
-    // clever google login shizz...
+function Login({ onLogin }) {
+    const signIn = () => {
+        auth.signInWithPopup(provider)
+            .then(onLogin)
+            .catch((err) => alert(err.message));
+    };
+    return (
+        <div className="login">
+            <div className="login__logo">
+                <img
+                    src="https://hackrx.in/images/head.png"
+                    alt="discord logo"
+                    height="500px"
+                />
+            </div>
 
-    auth.signInWithPopup(provider).catch((err) => alert(err.message));
-  };
-  return (
-    <div className="login">
-      <div className="login__logo">
-        <img
-          src="https://www.freepnglogos.com/uploads/discord-logo-png/discord-logo-logodownload-download-logotipos-1.png"
-          alt="discord logo"
-        />
-      </div>
-
-      <Button onClick={signIn}>Sign In</Button>
-    </div>
-  );
+            <Button onClick={signIn}>Sign In</Button>
+        </div>
+    );
 }
 
 export default Login;

@@ -3,73 +3,110 @@ import "./Sidebar.css";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import AddIcon from "@material-ui/icons/Add";
 import SidebarChannel from "./SidebarChannel";
-import SignalCellularAltIcon from "@material-ui/icons/SignalCellularAlt";
-import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
-import CallIcon from "@material-ui/icons/Call";
+import ExitToAppIcon from "@material-ui/icons/ExitToApp";
 import { Avatar } from "@material-ui/core";
-import MicIcon from "@material-ui/icons/Mic";
-import HeadsetIcon from "@material-ui/icons/Headset";
-import SettingsIcon from "@material-ui/icons/Settings";
-import { useSelector } from "react-redux";
-import { selectUser } from "./features/userSlice";
 import db, { auth } from "./firebase";
 import { useState } from "react";
 import { useEffect } from "react";
 
-const Sidebar = () => {
-  const user = useSelector(selectUser);
-  const [channels, setChannels] = useState([]);
+const Sidebar = ({ user, onChannelChange }) => {
+    const [channels, setChannels] = useState([]);
+    let backEndURL = "http://localhost:9000";
+    useEffect(() => {
+        fetch(`${backEndURL}/getchannel`)
+            .then((data) => data.json())
+            .then((res) => {
+                console.log(res[0]);
+                setChannels([...res]);
+                console.log(channels);
+            })
+            .catch((err) => {
+                alert(err.message);
+            });
+    }, []);
 
-  useEffect(() => {
-    db.collection("channels").onSnapshot((snapshot) => {
-      setChannels(
-        snapshot.docs.map((doc) => ({
-          id: doc.id,
-          channel: doc.data(),
-        }))
-      );
-    });
-  }, []);
+    const handleAddChannel = (e) => {
+        e.preventDefault();
+        const channelName = prompt("Enter a new channel name");
+        // console.log(channelName);
+        if (channelName) {
+            fetch("http://localhost:9000/addchannel", {
+                method: "post",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ channelName: channelName }),
+            })
+                .then(() => {
+                    fetch(`${backEndURL}/getchannel`)
+                        .then((data) => data.json())
+                        .then((res) => {
+                            console.log(res[0]);
+                            setChannels([...res]);
+                            console.log(channels);
+                        })
+                        .catch((err) => {
+                            alert(err.message);
+                        });
+                })
+                .catch((err) => {
+                    alert(err.message);
+                });
+        }
+    };
+    // useEffect(() => {
+    //     fetch("")
+    //       db.collection("channels").onSnapshot((snapshot) => {
+    //           setChannels(
+    //               snapshot.docs.map((doc) => ({
+    //                   id: doc.id,
+    //                   channel: doc.data(),
+    //               }))
+    //           );
+    //       });
+    //   }, []);
 
-  const handleAddChannel = (e) => {
-    e.preventDefault();
-    const channelName = prompt("Enter a new channel name");
-    if (channelName) {
-      db.collection("channels").add({
-        channelName: channelName,
-      });
-    }
-  };
+    //   const handleAddChannel = (e) => {
+    //       e.preventDefault();
+    //       const channelName = prompt("Enter a new channel name");
+    //       if (channelName) {
+    //           db.collection("channels").add({
+    //               channelName: channelName,
+    //           });
+    //       }
+    //   };
 
-  return (
-    <div className="sidebar">
-      <div className="sidebar__top">
-        <h3>Clever Programmer</h3>
-        <ExpandMoreIcon />
-      </div>
+    return (
+        <div className="sidebar">
+            <div className="sidebar__top">
+                <h3>HackeRX2.0 RuntimeTerror</h3>
+                <ExpandMoreIcon />
+            </div>
 
-      <div className="sidebar__channels">
-        <div className="sidebar__channelsHeader">
-          <div className="sidebar__header">
-            <ExpandMoreIcon />
-            <h4>Text Channels</h4>
-          </div>
+            <div className="sidebar__channels">
+                <div className="sidebar__channelsHeader">
+                    <div className="sidebar__header">
+                        <ExpandMoreIcon />
+                        <h4>Text Channels</h4>
+                    </div>
 
-          <AddIcon onClick={handleAddChannel} className="sidebar__addChannel" />
-        </div>
+                    <AddIcon
+                        onClick={handleAddChannel}
+                        className="sidebar__addChannel"
+                    />
+                </div>
 
-        <div className="sidebar__channelsList">
-          {channels.map(({ id, channel }) => (
-            <SidebarChannel
-              key={id}
-              id={id}
-              channelName={channel.channelName}
-            />
-          ))}
-        </div>
-      </div>
+                <div className="sidebar__channelsList">
+                    {channels.map((channel) => (
+                        <SidebarChannel
+                            key={channel._id}
+                            id={channel._id}
+                            channelName={channel.channelName}
+                            onChannelChange={onChannelChange}
+                        />
+                    ))}
+                </div>
+            </div>
 
-      <div className="sidebar__voice">
+            {/* <div className="sidebar__voice">
         <SignalCellularAltIcon
           className="sidebar__voiceIcons"
           fontSize="large"
@@ -83,8 +120,8 @@ const Sidebar = () => {
           <InfoOutlinedIcon />
           <CallIcon />
         </div>
-      </div>
-      {/* <div className="sidebar__profile">
+      </div> */}
+            {/* <div className="sidebar__profile">
         <Avatar />
         <div className="sidebar__profileInfo">
           <h3>Hello</h3>
@@ -97,21 +134,22 @@ const Sidebar = () => {
           <SettingsIcon />
         </div>
       </div> */}
-      <div className="sidebar__profile">
-        <Avatar src={user.photo} onClick={() => auth.signOut()} />
-        <div className="sidebar__profileInfo">
-          <h3>{user.displayName}</h3>
-          <p>#{user.uid.substring(0, 5)}</p>
-        </div>
+            <div className="sidebar__profile">
+                <Avatar src={user.photo} />
+                <div className="sidebar__profileInfo">
+                    <h3>{user.displayName}</h3>
+                    <p>#{user.uid.substring(0, 5)}</p>
+                </div>
 
-        <div className="sidebar__profileIcons">
-          <MicIcon />
-          <HeadsetIcon />
-          <SettingsIcon />
+                <div className="sidebar__profileIcons">
+                    <ExitToAppIcon
+                        onClick={() => auth.signOut()}
+                        style={{ cursor: "pointer" }}
+                    />
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default Sidebar;
