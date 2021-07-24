@@ -17,225 +17,134 @@ app.use(express.json());
 app.use(cors());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-// parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }));
-
-// parse application/json
 app.use(bodyParser.json());
 
+// Channel Routes
 app.post("/addchannel", (req, res) => {
-  var name = req.body.channelName;
-  var channel = new Channel({
-    channelName: name,
-  });
-  channel.save((err, newChannel) => {
-    if (err) {
-      console.log(err);
-      res.status(400).json(err.message);
-    } else {
-      console.log(newChannel);
-      res.status(200).send(newChannel);
-    }
-  });
+    var name = req.body.channelName;
+    var channel = new Channel({
+        channelName: name,
+    });
+    channel.save((err, newChannel) => {
+        if (err) {
+            console.log(err);
+            res.status(400).json(err.message);
+        } else {
+            res.status(200).send(newChannel);
+        }
+    });
 });
 
 app.get("/getchannel", (req, res) => {
-  Channel.find({}, (err, channelNames) => {
-    if (err) {
-      console.log(err);
-      res.status(400).json(err.message);
-    } else {
-      res.status(200).send(channelNames);
-    }
-  });
+    Channel.find({}, (err, channelNames) => {
+        if (err) {
+            console.log(err);
+            res.status(400).json(err.message);
+        } else {
+            res.status(200).send(channelNames);
+        }
+    });
 });
 
+// Message Routes
 app.post("/getchanneldetails", (req, res) => {
-  var { id } = req.body;
-  console.log(id);
-  Channel.find({ _id: id }, (err, foundChannels) => {
-    if (err) {
-      console.log(err);
-      res.status(400).json(err.message);
-    } else {
-      if (foundChannels.length > 0) {
-        Message.find(
-          { _id: foundChannels[0].messages },
-          (err, foundMessages) => {
-            if (err) {
-              console.log(err);
-              res.status(400).json(err.message);
+    var { id } = req.body;
+    Channel.find({ _id: id }, (err, foundChannels) => {
+        if (err) {
+            console.log(err);
+            res.status(400).json(err.message);
+        } else {
+            if (foundChannels.length > 0) {
+                Message.find(
+                    { _id: foundChannels[0].messages },
+                    (err, foundMessages) => {
+                        if (err) {
+                            console.log(err);
+                            res.status(400).json(err.message);
+                        } else {
+                            res.json({
+                                foundMessages,
+                                foundChannels,
+                            });
+                        }
+                    }
+                );
             } else {
-              res.json({
-                foundMessages,
-                foundChannels,
-              });
+                res.status(400).json("No Channel found");
             }
-          }
-        );
-      } else {
-        res.status(400).json("No Channel found");
-      }
-    }
-  });
+        }
+    });
 });
 
 app.post("/addmessage", (req, res) => {
-  var str = req.body.message;
-  var channelId = req.body.channel_id;
-  var userId = req.body.user_id;
-  var userName = req.body.user_name;
-  console.log(str, channelId, userId);
-  var message = new Message({
-    message: str,
-    user_id: userId,
-    user_name: userName,
-  });
-  console.log(message);
-  message.save((err, doneMessage) => {
-    if (err) {
-      console.log(err);
-      res.status(400).json(err.message);
-    } else {
-      Channel.findOne({ _id: channelId }, (err, found) => {
-        found.messages.push(message);
-        found.save((err, doneChannel) => {
-          if (err) {
+    var str = req.body.message;
+    var channelId = req.body.channel_id;
+    var userId = req.body.user_id;
+    var userName = req.body.user_name;
+    var message = new Message({
+        message: str,
+        user_id: userId,
+        user_name: userName,
+    });
+    message.save((err, doneMessage) => {
+        if (err) {
             console.log(err);
             res.status(400).json(err.message);
-          } else {
-            Message.find({ _id: found.messages }, (err, chats) => {
-              if (err) {
-                console.log(err);
-                res.status(400).json(err.message);
-              } else {
-                res.send(chats);
-              }
+        } else {
+            Channel.findOne({ _id: channelId }, (err, found) => {
+                found.messages.push(message);
+                found.save((err, doneChannel) => {
+                    if (err) {
+                        console.log(err);
+                        res.status(400).json(err.message);
+                    } else {
+                        Message.find({ _id: found.messages }, (err, chats) => {
+                            if (err) {
+                                console.log(err);
+                                res.status(400).json(err.message);
+                            } else {
+                                res.send(chats);
+                            }
+                        });
+                    }
+                });
             });
-          }
-        });
-      });
-    }
-  });
+        }
+    });
 });
 
 app.post("/keyword", (req, res) => {
-  var str = req.body.str;
-  let out = "";
-
-  console.log("hello", str);
-
-  var py = spawn("python", ["pyScript/nlpModel.py"]),
-    data = str;
-
-  // Python output
-  py.stdout.on("data", function (output) {
-    out += output.toString();
-  });
-
-  // Python Output display
-  py.stdout.on("end", function () {
-    out = JSON.parse(out);
-
-    var searchText = "";
-
-    for (var x in out.keywords) {
-      searchText += out.keywords[x] + " ";
-    }
-    console.log(searchText);
-
-    search.json(
-      {
-        q: searchText,
-        location: "india",
-      },
-      (result) => {
-        console.log(result.shopping_results[0].link);
-        var output = { link: result.shopping_results[0].link };
-        res.send(output);
-      }
-    );
-  });
-
-  // Python data input
-  py.stdin.write(JSON.stringify(data));
-
-  py.stdin.end();
-});
-
-const getKeyWords = (res, messageObject) => {
-  var str = messageObject.message;
-  var messageID = messageObject._id;
-
-  let out = "";
-
-  console.log(str, messageID);
-
-  var py = spawn("python", ["pyScript/nlpModel.py"]),
-    data = str;
-
-  // Python output
-  py.stdout.on("data", function (output) {
-    out += output.toString();
-    console.log("Output:", output);
-  });
-
-  // Python Output display
-  py.stdout.on("end", function () {
-    console.log(out);
-    // out = JSON.parse(out);
-
-    Message.findOne({ _id: messageID }, (err, found) => {
-      out.map((word) => found.keywords.push(word));
-      found.save((err, keywordsAdded) => {
-        if (err) {
-          console.log(err);
-        } else {
-          googleSearch(res, out);
-        }
-      });
+    var str = req.body.str;
+    let out = "";
+    var py = spawn("python", ["pyScript/nlpModel.py"]),
+        data = str;
+    py.stdout.on("data", function (output) {
+        out += output.toString();
     });
 
-    // googleSearch(res, out);
-    // res.send(out);
-  });
-
-  // Python data input
-  py.stdin.write(JSON.stringify(data));
-
-  py.stdin.end();
-};
-
-const googleSearch = (res, str) => {
-  console.log(hello);
-  console.log(str);
-
-  search.json(
-    {
-      q: str.join(" "),
-      location: "india",
-    },
-    (result) => {
-      console.log(result.shopping_results[0].link);
-      res.send(result.shopping_results[0].link);
-    }
-  );
-};
-
-app.post("/x", (req, res) => {
-  var str = req.body.str;
-  search.json(
-    {
-      q: str,
-      location: "india",
-    },
-    (result) => {
-      console.log(result.shopping_results[0].link);
-      res.send(result.shopping_results[0].link);
-    }
-  );
+    py.stdout.on("end", function () {
+        out = JSON.parse(out);
+        var searchText = "";
+        for (var x in out.keywords) {
+            searchText += out.keywords[x] + " ";
+        }
+        search.json(
+            {
+                q: searchText,
+                location: "india",
+            },
+            (result) => {
+                console.log(result.shopping_results[0].link);
+                var output = { link: result.shopping_results[0].link };
+                res.send(output);
+            }
+        );
+    });
+    py.stdin.write(JSON.stringify(data));
+    py.stdin.end();
 });
 
 app.listen(config.port, () => {
-  console.log(`App is listening to ${config.port}`);
+    console.log(`App is listening to ${config.port}`);
 });
