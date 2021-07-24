@@ -123,7 +123,7 @@ app.post("/keyword", (req, res) => {
   var str = req.body.str;
   let out = "";
 
-  console.log(str);
+  console.log("hello", str);
 
   var py = spawn("python", ["pyScript/nlpModel.py"]),
     data = str;
@@ -137,7 +137,24 @@ app.post("/keyword", (req, res) => {
   py.stdout.on("end", function () {
     out = JSON.parse(out);
 
-    res.send(out);
+    var searchText = "";
+
+    for (var x in out.keywords) {
+      searchText += out.keywords[x] + " ";
+    }
+    console.log(searchText);
+
+    search.json(
+      {
+        q: searchText,
+        location: "india",
+      },
+      (result) => {
+        console.log(result.shopping_results[0].link);
+        var output = { link: result.shopping_results[0].link };
+        res.send(output);
+      }
+    );
   });
 
   // Python data input
@@ -190,7 +207,9 @@ const getKeyWords = (res, messageObject) => {
 };
 
 const googleSearch = (res, str) => {
-  // res.send(str);
+  console.log(hello);
+  console.log(str);
+
   search.json(
     {
       q: str.join(" "),
