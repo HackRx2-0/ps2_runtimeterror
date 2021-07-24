@@ -1,18 +1,21 @@
 .login {
-  display: grid;
-  place-items: center;
-  height: 100vh;
-  width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100%;
+    background-color: #738adb;
 }
 
 .login > button {
-  width: 300px;
-  background-color: #738adb;
-  color: #eff2f5;
-  font-weight: 800;
+    width: 300px;
+    background-color: #50bfa8;
+    color: #eff2f5;
+    font-weight: 800;
 }
 
 .login > button:hover {
-  background-color: black;
-  color: #738adb;
+    background-color: black;
+    color: #738adb;
 }

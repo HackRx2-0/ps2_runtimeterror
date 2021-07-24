@@ -2,37 +2,29 @@ import { Avatar } from "@material-ui/core";
 import React from "react";
 import "./Message.css";
 
-const Message = ({ timestamp, user, message }) => {
-  // const Message = ({ message }) => {
+const Message = ({ timestamp, userID, message, currUser, userName }) => {
+    let leftClassName = "align-left";
+    let rightClassName = "align-right";
 
-  // console.log(message)
+    return (
+        <div
+            className={userID === currUser.uid ? rightClassName : leftClassName}
+        >
+            <Avatar />
+            <div className="message">
+                <div className="message__info">
+                    <h4>
+                        {userName}
+                        <span className="message__timestamp">
+                            {new Date(timestamp).toUTCString()}
+                        </span>
+                    </h4>
 
-  return (
-    <div className="message">
-      <Avatar src={user.photo} />
-      <div className="message__info">
-        <h4>
-          {user.displayName}
-          <span className="message__timestamp">
-            {new Date(timestamp?.toDate()).toUTCString()}
-          </span>
-        </h4>
-
-        <p>{message}</p>
-      </div>
-    </div>
-    // <div className="message">
-    //   <Avatar />
-    //   <div className="message__info">
-    //     <h4>
-    //       Yash
-    //       <span className="message__timestamp">Timestamp</span>
-    //     </h4>
-
-    //     <p>XYZ MESSAGE</p>
-    //   </div>
-    // </div>
-  );
+                    <p className="message-content">{message}</p>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export default Message;

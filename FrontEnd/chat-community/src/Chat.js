@@ -6,29 +6,32 @@ import CradGiftcardIcon from "@material-ui/icons/CardGiftcard";
 import GifIcon from "@material-ui/icons/Gif";
 import EmojiEmoticonsIcon from "@material-ui/icons/EmojiEmotions";
 import Message from "./Message";
-import { useSelector } from "react-redux";
-import { selectUser } from "./features/userSlice";
-import { selectChannelId, selectChannelName } from "./features/appSlice";
 import { useState } from "react";
 import { useEffect } from "react";
 import db from "./firebase";
 import firebase from "firebase";
 
-const Chat = () => {
-  const user = useSelector(selectUser);
-  const channelId = useSelector(selectChannelId);
-  const channelName = useSelector(selectChannelName);
+const Chat = ({ user, channelId, channelName }) => {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
+  const [suggestedLink, setSuggestedLink] = useState({
+    address: "http://amazon.com",
+  });
 
   useEffect(() => {
     if (channelId) {
-      db.collection("channels")
-        .doc(channelId)
-        .collection("messages")
-        .orderBy("timestamp", "desc")
-        .onSnapshot((snapshot) => {
-          setMessages(snapshot.docs.map((doc) => doc.data()));
+      fetch("http://localhost:9000/getchanneldetails", {
+        method: "post",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: channelId }),
+      })
+        .then((data) => data.json())
+        .then((res) => {
+          console.log(res);
+          setMessages([...res.foundMessages]);
+        })
+        .catch((err) => {
+          alert(err.message);
         });
     }
   }, [channelId]);
@@ -36,30 +39,70 @@ const Chat = () => {
   const sendMessage = (e) => {
     e.preventDefault();
 
-    db.collection("channels").doc(channelId).collection("messages").add({
-      message: input,
-      user: user,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-    });
+    if (channelId) {
+      fetch("http://localhost:9000/keyword", {
+        method: "post",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          str: input,
+        }),
+      }).then((link) => {
+        link.json().then((data) => {
+          const address = data.link;
+          setSuggestedLink({ address });
+        });
+      });
 
+      fetch("http://localhost:9000/addmessage", {
+        method: "post",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: input,
+          channel_id: channelId,
+          user_id: user.uid,
+          user_name: user.displayName,
+        }),
+      })
+        .then((data) => data.json())
+        .then((res) => {
+          fetch("http://localhost:9000/getchanneldetails", {
+            method: "post",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: channelId }),
+          })
+            .then((data) => data.json())
+            .then((res) => {
+              console.log(res);
+              setMessages([...res.foundMessages]);
+            })
+            .catch((err) => {
+              alert(err.message);
+            });
+        })
+        .catch((err) => {
+          alert(err.message);
+        });
+    }
     setInput("");
   };
 
   return (
     <div className="chat">
-      <ChatHeader channelName={channelName} />
+      <ChatHeader channelName={channelName} suggestionLink={suggestedLink} />
 
       <div className="chat__messages">
-        {messages.map((message) => {
-          console.log(message);
-        })}
-        {messages.map((message) => (
-          <Message
-            message={message.message}
-            timestamp={message.timestamp}
-            user={message.user}
-          />
-        ))}
+        {messages.length > 0 &&
+          messages.map((message) => (
+            <div style={{ border: "1ps solid red" }}>
+              <Message
+                message={message.message}
+                timestamp={message.createdAt}
+                userID={message.user_id}
+                userName={message.user_name}
+                currUser={user}
+              />
+            </div>
+          ))}
       </div>
 
       <div className="chat__input">
